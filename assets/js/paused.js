@@ -1,5 +1,7 @@
 // VARIABLES
-const pausedStyle = { font: "bold 30px sans-serif", fill: "#000" };
+const pausedStyleDark = { font: "bold 25px sans-serif", fill: "#000" };
+const pausedStyleGreen = { font: "bold 25px sans-serif", fill: "#88B04B" };
+let pausedText;
 
 // GAME OVER SCENE
 class PausedScene extends Phaser.Scene{
@@ -7,14 +9,30 @@ class PausedScene extends Phaser.Scene{
         super('PausedScene')
     }
 
-    create() {       
-        pause.visible = false;
-        let pausedText = this.add.text(this.game.renderer.width / 2 + 10, this.game.renderer.height / 2, `PAUSED MODE. PRESS THE MOUSE TO CONTINUE`, pausedStyle).setOrigin(0.5);
+    create() {     
+        this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.input.once('pointerdown', function () {
+        pause.visible = false;
+
+        if (!darkMode) {
+            pausedText = this.add.text(this.game.renderer.width / 2 + 10, this.game.renderer.height / 2, `PAUSED MODE. PRESS THE MOUSE OR SPACE TO CONTINUE`, pausedStyleDark).setOrigin(0.5);
+        } else {
+            pausedText = this.add.text(this.game.renderer.width / 2 + 10, this.game.renderer.height / 2, `PAUSED MODE. PRESS THE MOUSE OR SPACE TO CONTINUE`, pausedStyleGreen).setOrigin(0.5);
+        }
+
+        this.input.on('pointerdown', function () {
             this.scene.resume('GameScene');
             pausedText.visible = false;
             pause.visible = true;
-        }, this);       
+        }, this);  
+
+    }
+
+    update() {
+        if (this.cursors.space.isDown) {
+            this.scene.resume('GameScene');
+            pausedText.visible = false;
+            pause.visible = true;
+        }
     }
 }

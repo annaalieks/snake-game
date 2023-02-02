@@ -2,8 +2,11 @@
 
 // Main game variables
 let snake;
+let newPart;
 let food;
 let cursors;
+let background;
+let darkMode;
 
 // Direction variables
 const UP = 0;
@@ -40,13 +43,14 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image('bg_mono', './assets/images/bg_mono.svg');
         this.load.image('body', './assets/images/snake.svg');
+        this.load.image('body_green', './assets/images/snake_green.svg');
         this.load.image('food', './assets/images/apple.svg');
         this.load.image('score', './assets/images/score.svg');
         this.load.image('speed', './assets/images/speed.svg');
         this.load.image('cup', './assets/images/cup.svg');
         this.load.image('pause', './assets/images/pause.svg');
-        this.load.image('resume', './assets/images/resume.svg');
     }
 
     create() {
@@ -119,7 +123,7 @@ class GameScene extends Phaser.Scene {
 
                     this.alive = true;
 
-                    this.speed = 150;
+                    this.speed = 130;
 
                     // Set speed value
                     this.speedValue = 0;
@@ -134,8 +138,8 @@ class GameScene extends Phaser.Scene {
                 },
 
             update: function (time) {
-                if (time >= this.moveTime) { 
-                    return this.move(time); 
+                if (time >= this.moveTime) {
+                    return this.move(time);
                 }
             },
 
@@ -210,7 +214,11 @@ class GameScene extends Phaser.Scene {
             },
 
             grow: function () {
-                let newPart = this.body.create(this.tail.x, this.tail.y, 'body');
+                if (!darkMode) {
+                    newPart = this.body.create(this.tail.x, this.tail.y, 'body');
+                } else {
+                    newPart = this.body.create(this.tail.x, this.tail.y, 'body_green');
+                }
 
                 newPart.setOrigin(0);
             },
@@ -230,10 +238,30 @@ class GameScene extends Phaser.Scene {
                         speedTextValue.text = this.speedValue.toString();
                     }
 
+                    // Mode toggling
+                    if (food.score % 10 === 0) {
+                        snake.applyState();
+                    }
+
                     return true;
 
                 } else {
                     return false;
+                }
+            },
+
+            applyState: function () {
+
+                if (!darkMode) {
+                    darkMode = true;
+                    [newPart, score, highestScore, speed, pause, food, scoreTextValue, speedTextValue, highestScoreTextValue].forEach(element => element.setTintFill(0x88B04B));
+                    snake.body.getChildren().forEach(element => element.setTintFill(0x88B04B));
+                    background.setTintFill(0x0b0b17);
+                } else {
+                    darkMode = false;
+                    [newPart, score, highestScore, speed, pause, food, scoreTextValue, speedTextValue, highestScoreTextValue].forEach(element => element.setTintFill(0x000000));
+                    snake.body.getChildren().forEach(element => element.setTintFill(0x000000));
+                    background.setTintFill(0x88B04B);
                 }
             },
 
@@ -302,7 +330,7 @@ class GameScene extends Phaser.Scene {
 
             initialize:
 
-                function Icon (scene, x, y, texture) {
+                function Icon(scene, x, y, texture) {
                     Phaser.GameObjects.Image.call(this, scene)
 
                     this.setTexture(texture);
@@ -329,23 +357,16 @@ class GameScene extends Phaser.Scene {
                     scene.add.existing(this);
                 }
         });
+        
+        // Background
+        background = this.add.image(0, 0, 'bg_mono').setOrigin(0);
+        darkMode = false;
 
         // Icons
         score = new Icon(this, 10, 10, 'score');
         speed = new Icon(this, 10, 30, 'speed');
-        highestScore = new Icon(this, 10, 50, 'cup'); 
+        highestScore = new Icon(this, 10, 50, 'cup');
         pause = new Icon(this, 10, 70, 'pause');
-        play = new Icon(this, 10, 70, 'resume');
-        play.visible = false;
-
-        // Pause
-        pause.setInteractive({
-            useHandCursor: true
-        });
-        pause.on('pointerup',() => {
-            this.scene.pause();
-            this.scene.launch('PausedScene');
-        })
 
         // Counter values
         scoreTextValue = new CounterValue(this, 35, 8, this.score, textStyle);
@@ -360,10 +381,20 @@ class GameScene extends Phaser.Scene {
 
         // Keyboard controls
         cursors = this.input.keyboard.createCursorKeys();
+
+        // Pause Scene
+        pause.setInteractive({
+            useHandCursor: true
+        });
+        pause.on('pointerup',() => {
+            this.scene.pause();
+            this.scene.launch('PausedScene');
+        })
     }
 
     // Update
-    update (time) {
+    update(time) {
+        // Game Over Scene
         if (!snake.alive) {
             this.scene.start('GameOverScene');
         }
@@ -377,6 +408,9 @@ class GameScene extends Phaser.Scene {
             snake.faceUp();
         } else if (cursors.down.isDown) {
             snake.faceDown();
+        } else if (cursors.space.isDown) {
+            this.scene.pause();
+            this.scene.launch('PausedScene');
         }
 
         if (snake.update(time)) {
